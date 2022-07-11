@@ -105,7 +105,13 @@ static int cam_ois_power_up(struct cam_ois_ctrl_t *o_ctrl)
 		&o_ctrl->soc_info;
 	struct cam_ois_soc_private *soc_private;
 	struct cam_sensor_power_ctrl_t  *power_info;
+	struct timespec64               ts1, ts2; // xiaomi add
+	long                            microsec = 0; // xiaomi add
 
+	/* xiaomi add begin */
+	CAM_GET_TIMESTAMP(ts1);
+	CAM_DBG(MI_DEBUG, "%s start power_up", o_ctrl->ois_name);
+	/* xiaomi add end */
 	soc_private =
 		(struct cam_ois_soc_private *)o_ctrl->soc_info.soc_private;
 	power_info = &soc_private->power_info;
@@ -157,6 +163,12 @@ static int cam_ois_power_up(struct cam_ois_ctrl_t *o_ctrl)
 		CAM_ERR(CAM_OIS, "cci_init failed: rc: %d", rc);
 		goto cci_failure;
 	}
+	/* xiaomi add begin */
+	CAM_GET_TIMESTAMP(ts2);
+	CAM_GET_TIMESTAMP_DIFF_IN_MICRO(ts1, ts2, microsec);
+	CAM_DBG(MI_DEBUG, "%s end power_up, occupy time is: %ld ms",
+		o_ctrl->ois_name, microsec/1000);
+	/* xiaomi add end */
 
 	return rc;
 cci_failure:
@@ -179,7 +191,13 @@ static int cam_ois_power_down(struct cam_ois_ctrl_t *o_ctrl)
 	struct cam_hw_soc_info          *soc_info =
 		&o_ctrl->soc_info;
 	struct cam_ois_soc_private *soc_private;
+	struct timespec64               ts1, ts2; // xiaomi add
+	long                            microsec = 0; // xiaomi add
 
+	/* xiaomi add begin */
+	CAM_GET_TIMESTAMP(ts1);
+	CAM_DBG(MI_DEBUG, "%s start power_down", o_ctrl->ois_name);
+	/* xiaomi add end */
 	if (!o_ctrl) {
 		CAM_ERR(CAM_OIS, "failed: o_ctrl %pK", o_ctrl);
 		return -EINVAL;
@@ -202,6 +220,12 @@ static int cam_ois_power_down(struct cam_ois_ctrl_t *o_ctrl)
 	}
 
 	camera_io_release(&o_ctrl->io_master_info);
+	/* xiaomi add begin */
+	CAM_GET_TIMESTAMP(ts2);
+	CAM_GET_TIMESTAMP_DIFF_IN_MICRO(ts1, ts2, microsec);
+	CAM_DBG(MI_DEBUG, "%s end power_down, occupy time is: %ld ms",
+		o_ctrl->ois_name, microsec/1000);
+	/* xiaomi add end */
 
 	return rc;
 }
@@ -255,6 +279,7 @@ static int cam_ois_apply_settings(struct cam_ois_ctrl_t *o_ctrl,
 	struct i2c_settings_list *i2c_list;
 	int32_t rc = 0;
 	uint32_t i, size;
+	int32_t j = 0; // xiaomi add
 
 	if (o_ctrl == NULL || i2c_set == NULL) {
 		CAM_ERR(CAM_OIS, "Invalid Args");
@@ -268,6 +293,30 @@ static int cam_ois_apply_settings(struct cam_ois_ctrl_t *o_ctrl,
 
 	list_for_each_entry(i2c_list,
 		&(i2c_set->list_head), list) {
+		/* xiaomi add I2C trace begin */
+		switch (i2c_list->op_code) {
+		case CAM_SENSOR_I2C_WRITE_RANDOM:
+		case CAM_SENSOR_I2C_WRITE_BURST:
+		case CAM_SENSOR_I2C_WRITE_SEQ: {
+			for (j = 0;j < i2c_list->i2c_settings.size;j++) {
+				trace_cam_i2c_write_log_event("[OISSETTINGS]", o_ctrl->ois_name,
+					i2c_set->request_id, j, "WRITE", i2c_list->i2c_settings.reg_setting[j].reg_addr,
+					i2c_list->i2c_settings.reg_setting[j].reg_data);
+			}
+			break;
+		}
+		case CAM_SENSOR_I2C_READ_RANDOM:
+		case CAM_SENSOR_I2C_READ_SEQ: {
+			for (j = 0;j < i2c_list->i2c_settings.size;j++) {
+				trace_cam_i2c_write_log_event("[OISSETTINGS]", o_ctrl->ois_name,
+					i2c_set->request_id, j, "READ", i2c_list->i2c_settings.reg_setting[j].reg_addr,
+					i2c_list->i2c_settings.reg_setting[j].reg_data);
+			}
+			break;
+		}
+		default:
+			break;
+		} /* xiaomi add I2C trace end */
 		if (i2c_list->op_code ==  CAM_SENSOR_I2C_WRITE_RANDOM) {
 			rc = camera_io_dev_write(&(o_ctrl->io_master_info),
 				&(i2c_list->i2c_settings));
@@ -575,6 +624,8 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 	struct cam_ois_soc_private     *soc_private =
 		(struct cam_ois_soc_private *)o_ctrl->soc_info.soc_private;
 	struct cam_sensor_power_ctrl_t  *power_info = &soc_private->power_info;
+	struct timespec64               ts1, ts2; // xiaomi add
+	long                            microsec = 0; // xiaomi add
 
 	ioctl_ctrl = (struct cam_control *)arg;
 	if (copy_from_user(&dev_config,
@@ -772,11 +823,21 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		}
 
 		if (o_ctrl->ois_fw_flag) {
+			/* xiaomi add begin */
+			CAM_GET_TIMESTAMP(ts1);
+			CAM_DBG(MI_PERF, "%s start firmware download", o_ctrl->ois_name);
+			/* xiaomi add end */
 			rc = cam_ois_fw_download(o_ctrl);
 			if (rc) {
 				CAM_ERR(CAM_OIS, "Failed OIS FW Download");
 				goto pwr_dwn;
 			}
+			/* xiaomi add begin */
+			CAM_GET_TIMESTAMP(ts2);
+			CAM_GET_TIMESTAMP_DIFF_IN_MICRO(ts1, ts2, microsec);
+			CAM_DBG(MI_PERF, "%s end firmware download, occupy time is: %ld ms",
+				o_ctrl->ois_name, microsec/1000);
+			/* xiaomi add end */
 		}
 
 		rc = cam_ois_apply_settings(o_ctrl, &o_ctrl->i2c_init_data);

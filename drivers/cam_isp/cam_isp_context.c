@@ -1152,8 +1152,7 @@ static void __cam_isp_ctx_send_sof_timestamp(
 	if (frame_interval_para > 1) {
 		cam_isp_detect_framerate(ctx_isp,frame_interval_para);
 	} else if (frame_interval_para == 1) {
-		//CAM_DBG(MI_PERF,"ERROR,frame interval number must greater than 1");
-		CAM_DBG(CAM_ISP,"ERROR,frame interval number must greater than 1");
+		CAM_DBG(MI_PERF,"ERROR,frame interval number must greater than 1");
 	}
 
 end:
@@ -7194,10 +7193,7 @@ void cam_isp_detect_framerate(struct cam_isp_context *ctx,
 		case 0: {
 			timespan = (ctx->sof_timestamp_val - ctx->base->dbg_timestamp)/1000000;
 			frame_rate = ctx->base->batchsize*(1000000*(ctx->frame_id - ctx->base->dbg_frame))/timespan;
-			//CAM_DBG(MI_PERF,
-			//	"link hdl 0x%x frame number %d Time Span(ms):%d Frame rate(fps):%d.%03d ctx %d",
-			//	ctx->base->link_hdl,ctx->frame_id,timespan,frame_rate/1000,frame_rate%1000,ctx->base->ctx_id);
-			CAM_DBG(CAM_ISP,
+			CAM_DBG(MI_PERF,
 				"link hdl 0x%x frame number %d Time Span(ms):%d Frame rate(fps):%d.%03d ctx %d",
 				ctx->base->link_hdl,ctx->frame_id,timespan,frame_rate/1000,frame_rate%1000,ctx->base->ctx_id);
 			break;
