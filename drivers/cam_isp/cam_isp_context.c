@@ -650,6 +650,12 @@ static int __cam_isp_ctx_pause_crm_timer(
 	int rc = -EINVAL;
 	struct cam_req_mgr_timer_notify  timer;
 
+	/*XiaoMi add*/
+	if (NULL == ctx->ctx_crm_intf || NULL == ctx->ctx_crm_intf->notify_timer) {
+		CAM_ERR(CAM_ISP, "ctx_crm_intf is null, not to pause sof timer");
+		goto end;
+	}
+
 	timer.link_hdl = ctx->link_hdl;
 	timer.dev_hdl = ctx->dev_hdl;
 	timer.state = false;
