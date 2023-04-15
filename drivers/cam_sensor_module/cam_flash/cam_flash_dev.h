@@ -48,7 +48,6 @@
 #define CAM_FLASH_PACKET_OPCODE_INIT                 0
 #define CAM_FLASH_PACKET_OPCODE_SET_OPS              1
 #define CAM_FLASH_PACKET_OPCODE_NON_REALTIME_SET_OPS 2
-#define CAM_FLASH_PACKET_OPCODE_STREAM_OFF           3
 
 #define CONFIG_CAMERA_I2CFLASH 1
 
@@ -197,8 +196,6 @@ struct cam_flash_func_tbl {
  * @i2c_data            : I2C register settings
  * @last_flush_req      : last request to flush
  * @trigger_source      : Indicate the trigger source
- * @streamoff_count     : Count to hold the number of times stream off called
- * @apply_streamoff     : variable to store when to apply stream off
  */
 struct cam_flash_ctrl {
 	char device_name[CAM_CTX_DEV_NAME_MAX_LENGTH];
@@ -230,8 +227,6 @@ struct cam_flash_ctrl {
 #if IS_ENABLED(CONFIG_ISPV3)
 	enum cam_req_mgr_trigger_source     trigger_source;
 #endif
-	uint32_t                            streamoff_count;
-	int32_t                             apply_streamoff;
 };
 
 int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg);
